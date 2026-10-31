@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Rental Ledger — Event inventory",
-  description: "Manage event rental stock, reservations, invoices, and returns.",
+  title: "A2Z Rentals — Inventory & bookings",
+  description: "Manage A2Z Rentals stock, reservations, invoices, and returns.",
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
