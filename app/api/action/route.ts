@@ -1,4 +1,5 @@
 import { availability, asInt, asText, daysBetween, db, fail, id, iso, json, member, today, validDate } from "@/lib/rental";
+import { env } from "cloudflare:workers";
 
 export async function POST(request: Request) {
   const user = await member(); if (!user) return fail("Sign in required", 401);
@@ -6,12 +7,15 @@ export async function POST(request: Request) {
   try { body = await request.json(); } catch { return fail("Invalid request"); }
   const d = db();
   try {
+    const imageKey = asText(body.imageKey, 120);
+    if (imageKey && (!/^[0-9a-f-]{36}\.webp$/.test(imageKey) || !env.BUCKET || !await env.BUCKET.head(imageKey))) return fail("Uploaded image was not found");
     if (body.type === "product") {
       const name = asText(body.name, 100);
       const rows = Array.isArray(body.variants) ? body.variants : [];
       if (!name || !rows.length || rows.length > 30) return fail("Add a product name and at least one variant");
+      if (rows.some(row => !row || typeof row !== "object" || (row as Record<string, unknown>).priceCents === null || (row as Record<string, unknown>).priceCents === "" || (row as Record<string, unknown>).totalStock === null || (row as Record<string, unknown>).totalStock === "")) return fail("Enter a daily price and stock count for every variant");
       const productId = id(), now = iso();
-      const statements = [d.prepare("INSERT INTO products(id,name,image_key,created_at) VALUES(?,?,?,?)").bind(productId,name,asText(body.imageKey,120) || null,now)];
+      const statements = [d.prepare("INSERT INTO products(id,name,image_key,created_at) VALUES(?,?,?,?)").bind(productId,name,imageKey || null,now)];
       for (const row of rows) {
         const v = row as Record<string, unknown>;
         const label = asText(v.label, 80) || "Standard", price = asInt(v.priceCents), stock = asInt(v.totalStock);
@@ -31,7 +35,7 @@ export async function POST(request: Request) {
     if (body.type === "product_update") {
       const productId = asText(body.productId, 50), name = asText(body.name, 100);
       if (!name) return fail("Name is required");
-      await d.prepare("UPDATE products SET name=?, image_key=COALESCE(?,image_key) WHERE id=?").bind(name,asText(body.imageKey,120) || null,productId).run();
+      await d.prepare("UPDATE products SET name=?, image_key=COALESCE(?,image_key) WHERE id=?").bind(name,imageKey || null,productId).run();
       return json({ ok: true });
     }
     if (body.type === "variant_update") {
@@ -60,7 +64,15 @@ export async function POST(request: Request) {
     }
     if (body.type === "party") {
       const name = asText(body.name, 100); if (!name) return fail("Party name is required");
-      await d.prepare("INSERT INTO parties(id,name,phone,email,created_at) VALUES(?,?,?,?,?)").bind(id(),name,asText(body.phone,40) || null,asText(body.email,120) || null,iso()).run();
+      await d.prepare("INSERT INTO parties(id,name,contact_name,phone,email,created_at) VALUES(?,?,?,?,?,?)").bind(id(),name,asText(body.contactName,100) || null,asText(body.phone,40) || null,asText(body.email,120) || null,iso()).run();
+      return json({ ok: true });
+    }
+    if (body.type === "member_invite") {
+      if (user.role !== "admin") return fail("Only admins can add users", 403);
+      const name = asText(body.name, 100), email = asText(body.email, 200).toLowerCase(), role = body.role;
+      if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || (role !== "admin" && role !== "staff")) return fail("Enter a name, valid email, and role");
+      if (await d.prepare("SELECT user_id FROM members WHERE email=? COLLATE NOCASE").bind(email).first()) return fail("This user already has an account");
+      await d.prepare("INSERT INTO member_invites(email,name,role,created_at,created_by) VALUES(?,?,?,?,?) ON CONFLICT(email) DO UPDATE SET name=excluded.name,role=excluded.role,created_at=excluded.created_at,created_by=excluded.created_by").bind(email,name,role,iso(),user.user_id).run();
       return json({ ok: true });
     }
     if (body.type === "rental") {

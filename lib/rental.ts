@@ -18,8 +18,10 @@ export async function member() {
   let found = await database.prepare("SELECT * FROM members WHERE user_id = ?").bind(user.userId).first<{ user_id: string; email: string; name: string; role: "admin" | "staff" }>();
   if (!found) {
     const count = await database.prepare("SELECT count(*) AS n FROM members").first<{ n: number }>();
-    const role = count?.n ? "staff" : "admin";
-    await database.prepare("INSERT OR IGNORE INTO members(user_id,email,name,role,created_at) VALUES(?,?,?,?,?)").bind(user.userId, user.email, user.displayName, role, iso()).run();
+    const invite = count?.n ? await database.prepare("SELECT name,role FROM member_invites WHERE email=? COLLATE NOCASE").bind(user.email).first<{name:string;role:"admin"|"staff"}>() : null;
+    if (count?.n && !invite) return null;
+    await database.prepare("INSERT OR IGNORE INTO members(user_id,email,name,role,created_at) VALUES(?,?,?,?,?)").bind(user.userId, user.email, invite?.name || user.displayName, invite?.role || "admin", iso()).run();
+    if (invite) await database.prepare("DELETE FROM member_invites WHERE email=? COLLATE NOCASE").bind(user.email).run();
     found = await database.prepare("SELECT * FROM members WHERE user_id = ?").bind(user.userId).first();
   }
   return found;

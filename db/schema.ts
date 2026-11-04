@@ -3,6 +3,9 @@ import { integer, sqliteTable, text, index } from "drizzle-orm/sqlite-core";
 export const members = sqliteTable("members", {
   userId: text("user_id").primaryKey(), email: text("email").notNull(), name: text("name").notNull(), role: text("role", { enum: ["admin", "staff"] }).notNull(), createdAt: text("created_at").notNull(),
 });
+export const memberInvites = sqliteTable("member_invites", {
+  email: text("email").primaryKey(), name: text("name").notNull(), role: text("role", { enum: ["admin", "staff"] }).notNull(), createdAt: text("created_at").notNull(), createdBy: text("created_by").notNull(),
+});
 export const products = sqliteTable("products", {
   id: text("id").primaryKey(), name: text("name").notNull(), imageKey: text("image_key"), createdAt: text("created_at").notNull(),
 });
@@ -10,7 +13,7 @@ export const variants = sqliteTable("variants", {
   id: text("id").primaryKey(), productId: text("product_id").notNull().references(() => products.id), label: text("label").notNull(), color: text("color"), priceCents: integer("price_cents").notNull(), totalStock: integer("total_stock").notNull(), damagedStock: integer("damaged_stock").notNull().default(0), createdAt: text("created_at").notNull(),
 }, (t) => [index("variants_product_idx").on(t.productId)]);
 export const parties = sqliteTable("parties", {
-  id: text("id").primaryKey(), name: text("name").notNull(), phone: text("phone"), email: text("email"), createdAt: text("created_at").notNull(),
+  id: text("id").primaryKey(), name: text("name").notNull(), contactName: text("contact_name"), phone: text("phone"), email: text("email"), createdAt: text("created_at").notNull(),
 });
 export const rentals = sqliteTable("rentals", {
   id: text("id").primaryKey(), invoiceNo: text("invoice_no").notNull().unique(), partyId: text("party_id").notNull().references(() => parties.id), startDate: text("start_date").notNull(), dueDate: text("due_date").notNull(), days: integer("days").notNull(), notes: text("notes"), createdBy: text("created_by").notNull(), createdAt: text("created_at").notNull(),
