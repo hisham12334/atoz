@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AlertCircle, ArrowDownToLine, ArrowRight, Boxes, CalendarDays, Check, ChevronDown, ClipboardList, Clock3, FileText, LayoutDashboard, Menu, Package, Plus, Printer, Search, Settings2, ShieldCheck, Users, X } from "lucide-react";
+import { AlertCircle, ArrowDownToLine, ArrowRight, Boxes, CalendarDays, Check, ChevronDown, ClipboardList, Clock3, FileText, LayoutDashboard, LogOut, Menu, Package, Plus, Printer, Search, Settings2, ShieldCheck, Users, X } from "lucide-react";
 import Dashboard from "./dashboard";
 import ThemeSwitch from "./theme-switch";
 
@@ -95,7 +95,7 @@ export default function Ledger(){
       <div className="workspace-name"><div className="workspace-icon">A</div><div><strong>A2Z Rentals</strong><small>Inventory workspace</small></div></div>
       <div className="nav-caption">GENERAL</div>
       <nav>{nav.map(n=><button key={n.id} className={`nav-item ${tab===n.id?"active":""}`} onClick={()=>{setTab(n.id);setQuery("");setMobile(false)}}><n.icon size={19}/>{n.label}{n.id==="overview"&&overdue.length>0&&<span className="nav-count">{overdue.length}</span>}</button>)}</nav>
-      <div className="sidebar-bottom"><div className="sidebar-tip"><div className="tip-icon"><Package size={17}/></div><strong>Stock stays accurate</strong><p>Usable returns replenish inventory after staff records them.</p></div><div className="user"><div className="avatar">{state.user.name.slice(0,1).toUpperCase()}</div><div><strong>{state.user.name}</strong><small>{state.user.role==="admin"?"Administrator":"Staff member"}</small></div></div></div>
+      <div className="sidebar-bottom"><div className="sidebar-tip"><div className="tip-icon"><Package size={17}/></div><strong>Stock stays accurate</strong><p>Usable returns replenish inventory after staff records them.</p></div><div className="user"><div className="avatar">{state.user.name.slice(0,1).toUpperCase()}</div><div><strong>{state.user.name}</strong><small>{state.user.role==="admin"?"Administrator":"Staff member"}</small></div></div><a className="logout-link" href="/signout-with-chatgpt?return_to=%2F" target="_top"><LogOut size={16}/> Log out</a></div>
     </aside>
     {mobile&&<div className="mobile-backdrop" onClick={()=>setMobile(false)}/>}
     <main className="main">
